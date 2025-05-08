@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PixCakeWindowsCompanion"
         mc:Ignorable="d"
-        Title="MainWindow" Height="300" Width="600">
+        Title="微单相机图传伴侣" Height="300" Width="400" SizeToContent="WidthAndHeight" ResizeMode="NoResize">
     <Grid>
         <StackPanel Margin="10">
             <Label Content="图片存储路径:"/>
@@ -14,9 +14,9 @@
                 <Button x:Name="btnBrowse" Content="浏览..." Width="75" Click="BtnBrowse_Click"/>
             </StackPanel>
 
-            <Label Content="文件扩展名(不区分大小写，以空格分割多个文件扩展名，如：jpg DNG):" Margin="0,10,0,0"/>
+            <Label Content="文件扩展名:&#x0a;(不区分大小写，以空格分割多个文件扩展名，如：jpg DNG cr2 RAF)" Margin="0,10,0,0"/>
             <StackPanel Orientation="Horizontal">
-                <TextBox x:Name="txtFileExtension" Width="300" Margin="0,5,0,0"/>
+                <TextBox x:Name="txtFileExtension" Width="380" Margin="0,5,0,0"/>
             </StackPanel>
 
             <StackPanel Orientation="Horizontal">
@@ -26,6 +26,11 @@
             <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
                 <Button x:Name="btnStart" Content="启动" Width="100" Margin="0,0,10,0" Click="BtnStart_Click"/>
                 <Button x:Name="btnStop" Content="停止" Width="100" Click="BtnStop_Click"/>
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBlock x:Name="txtEmojiStatus" Text="⏸️" Width="32" Height="32" Margin="0,0,5,0" TextAlignment="Center" VerticalAlignment="Center" FontSize="24" Foreground="Blue"/>
+                <TextBlock x:Name="txtStatus" Text="未运行/已停止" VerticalAlignment="Center"/>
             </StackPanel>
         </StackPanel>
     </Grid>
