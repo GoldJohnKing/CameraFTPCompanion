@@ -26,7 +26,7 @@ bool isExtensionMatch(const std::wstring& fileName)
     return std::find(extensions.begin(), extensions.end(), fileExt) != extensions.end();
 }
 
-bool isFileReady(const std::wstring& filePath, int maxRetries = 50, int retryDelay = 500)
+bool isFileReady(const std::wstring& filePath, int maxRetries = 250, int retryDelay = 100)
 {
     for (int i = 0; i < maxRetries; i++)
     {
@@ -94,7 +94,7 @@ void MonitorThreadFunc(HANDLE hDir)
             break;
         }
 
-        if (WaitForSingleObject(hEvent, 1000) == WAIT_OBJECT_0)
+        if (WaitForSingleObject(hEvent, 100) == WAIT_OBJECT_0)
         {
             FILE_NOTIFY_INFORMATION* event = (FILE_NOTIFY_INFORMATION*)buffer;
 

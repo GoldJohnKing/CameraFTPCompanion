@@ -77,22 +77,30 @@ namespace PixCakeWindowsCompanion
                 txtEmojiStatus.Text = "✅";
                 txtEmojiStatus.Foreground = System.Windows.Media.Brushes.Green;
                 txtStatus.Text = "正在运行";
+                btnStart.IsEnabled = false;
+                btnStop.IsEnabled = true;
             }
             else
             {
                 txtEmojiStatus.Text = "❌";
                 txtEmojiStatus.Foreground = System.Windows.Media.Brushes.Red;
                 txtStatus.Text = "启动失败";
+                btnStart.IsEnabled = true;
+                btnStop.IsEnabled = false;
             }
         }
 
         private void BtnStop_Click(object sender, RoutedEventArgs e)
         {
+            btnStop.IsEnabled = false;
+            btnStart.IsEnabled = true;
             Stop();
 
             txtEmojiStatus.Text = "⏸️";
             txtEmojiStatus.Foreground = System.Windows.Media.Brushes.Blue;
             txtStatus.Text = "未运行/已停止";
+            btnStart.IsEnabled = true;
+            btnStop.IsEnabled = false;
         }
     }
 }
