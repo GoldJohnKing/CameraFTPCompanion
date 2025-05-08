@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PixCakeWindowsCompanion": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

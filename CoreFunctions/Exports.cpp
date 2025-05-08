@@ -2,23 +2,22 @@
 
 #include "Exports.h"
 
-#include <windows.h>
-#include <shellapi.h>
-#include <filesystem>
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <thread>
+#include "fineftp/server.h"
+
 #include <atomic>
-#include <mutex>
-#include <locale>
-#include <codecvt>
+#include <filesystem>
+#include <shellapi.h>
+#include <sstream>
+#include <string>
+#include <thread>
+#include <windows.h>
 
 std::atomic<bool> isRunning(false);
-std::wstring folderPath;
 std::vector<std::wstring>extensions;
+std::wstring watchedFolderPath;
 HANDLE watchedFolderHandle = NULL;
 std::thread monitorThread;
+fineftp::FtpServer* ftp_server;
 
 bool isExtensionMatch(const std::wstring& fileName)
 {
@@ -101,7 +100,7 @@ void MonitorThreadFunc(HANDLE hDir)
 
             do {
                 std::wstring fileName(event->FileName, event->FileNameLength / sizeof(WCHAR));
-                std::wstring fullPath = folderPath + L"\\" + fileName;
+                std::wstring fullPath = watchedFolderPath + L"\\" + fileName;
 
                 if ((event->Action == FILE_ACTION_ADDED ||
                     event->Action == FILE_ACTION_MODIFIED ||
@@ -125,8 +124,57 @@ void MonitorThreadFunc(HANDLE hDir)
     CloseHandle(hEvent);
 }
 
+std::string WideCharToUTF8(const wchar_t* wideStr)
+{
+    // 获取转换所需的字节数（UTF-8）
+    int size = WideCharToMultiByte(CP_UTF8, 0, wideStr, -1, nullptr, 0, nullptr, nullptr);
+    if (size == 0) return "";
 
-bool Start(const wchar_t* folderPath, const wchar_t* fileExtension, const bool ftpServerEnabled)
+    // 分配缓冲区
+    std::string utf8Str(size, 0);
+    WideCharToMultiByte(CP_UTF8, 0, wideStr, -1, utf8Str.data(), size, nullptr, nullptr);
+
+    // 移除末尾的空字符（如果有）
+    if (!utf8Str.empty() && utf8Str.back() == '\0') {
+        utf8Str.pop_back();
+    }
+
+    return utf8Str;
+}
+
+bool StartFtpServer()
+{
+    ftp_server = new fineftp::FtpServer(21); // Default listen to "0.0.0.0:21"
+
+    // Append a '\' to path's end, or fineftp won't handle the path correctly
+    std::string ftpRootPath = WideCharToUTF8(watchedFolderPath.c_str());
+
+    if (ftpRootPath[ftpRootPath.size() - 1] != '\\')
+    {
+        ftpRootPath = ftpRootPath + '\\';
+    }
+
+    // Add the well known anonymous user. Clients can log in using username
+    // "anonymous" or "ftp" with any password. The user will be able to access
+    // your drive and upload, download, create or delete files.
+    (*ftp_server).addUserAnonymous(ftpRootPath, fineftp::Permission::All);
+
+    // Start the FTP Server with a thread-pool size of 4.
+    return (*ftp_server).start(4);
+}
+
+void StopStpServer()
+{
+    (*ftp_server).stop();
+
+    if (nullptr != ftp_server)
+    {
+        delete ftp_server;
+        ftp_server = nullptr;
+    }
+}
+
+bool DLL_EXPORT Start(const wchar_t* folderPath, const wchar_t* fileExtension, const bool ftpServerEnabled)
 {
     if (isRunning) return true; // 监控仍在运行中
 
@@ -173,18 +221,29 @@ bool Start(const wchar_t* folderPath, const wchar_t* fileExtension, const bool f
     }
 
     isRunning = true;
+    watchedFolderPath = folderPath;
+
     monitorThread = std::thread(MonitorThreadFunc, watchedFolderHandle);
+
+    if (ftpServerEnabled && !StartFtpServer())
+    {
+        MessageBox(NULL, L"FTP服务器启动失败", NULL, NULL);
+        StopStpServer();
+    }
 
     return true;
 }
 
-void Stop()
+void DLL_EXPORT Stop()
 {
     if (!isRunning) return;
 
     isRunning = false;
+    watchedFolderPath.clear();
 
     monitorThread.join();
 
     CloseHandle(watchedFolderHandle);
+
+    StopStpServer();
 }

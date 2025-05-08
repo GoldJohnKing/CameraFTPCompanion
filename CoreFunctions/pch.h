@@ -10,12 +10,14 @@
 // 添加要在此处预编译的标头
 #include "framework.h"
 
-#include <windows.h>
+#include "fineftp/server.h"
+
+#include <atomic>
 #include <filesystem>
-#include <iostream>
+#include <shellapi.h>
+#include <sstream>
 #include <string>
 #include <thread>
-#include <atomic>
-#include <mutex>
+#include <windows.h>
 
 #endif //PCH_H
