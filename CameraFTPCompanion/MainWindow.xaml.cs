@@ -14,10 +14,16 @@ namespace CameraFTPCompanion
 {
     public partial class MainWindow : Window
     {
+        private const int MinPortValue = 0;
+        private const int MaxPortValue = 65535;
+
         public MainWindow()
         {
             InitializeComponent();
             LoadConfig();
+            txtFtpPort.PreviewTextInput += TxtFtpPort_PreviewTextInput;
+            txtFtpPort.TextChanged += TxtFtpPort_TextChanged;
+            System.Windows.DataObject.AddPastingHandler(txtFtpPort, TxtFtpPort_Pasting);
         }
 
         private string GetConfigPath()
@@ -31,11 +37,13 @@ namespace CameraFTPCompanion
             if (System.IO.File.Exists(configPath))
             {
                 string[] lines = System.IO.File.ReadAllLines(configPath);
-                if (lines.Length >= 3)
+                if (lines.Length >= 5)
                 {
                     txtFolderPath.Text = lines[0];
-                    txtFileExtension.Text = lines[1];
-                    chkFtpMode.IsChecked = bool.Parse(lines[2]);
+                    autoRunExePath.Text = lines[1];
+                    txtFileExtension.Text = lines[2];
+                    chkFtpMode.IsChecked = bool.Parse(lines[3]);
+                    txtFtpPort.Text = lines[4];
                 }
             }
         }
@@ -43,7 +51,7 @@ namespace CameraFTPCompanion
         private void SaveConfig()
         {
             string configPath = GetConfigPath();
-            System.IO.File.WriteAllText(configPath, $"{txtFolderPath.Text}\n{txtFileExtension.Text}\n{chkFtpMode.IsChecked}");
+            System.IO.File.WriteAllText(configPath, $"{txtFolderPath.Text}\n{autoRunExePath.Text}\n{txtFileExtension.Text}\n{chkFtpMode.IsChecked}\n{txtFtpPort.Text}");
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -87,6 +95,44 @@ namespace CameraFTPCompanion
                 txtStatus.Text = "启动失败";
                 btnStart.IsEnabled = true;
                 btnStop.IsEnabled = false;
+            }
+        }
+
+        private void TxtFtpPort_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            e.Handled = !int.TryParse(e.Text, out _);
+        }
+
+        private void TxtFtpPort_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (e.DataObject.GetDataPresent(typeof(string)))
+            {
+                string text = (string)e.DataObject.GetData(typeof(string));
+                if (!text.All(char.IsDigit))
+                {
+                    e.CancelCommand();
+                }
+            }
+        }
+
+        private void TxtFtpPort_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtFtpPort.Text))
+            {
+                txtFtpPort.Text = MinPortValue.ToString();
+                return;
+            }
+
+            if (int.TryParse(txtFtpPort.Text, out int port))
+            {
+                if (port < MinPortValue)
+                    txtFtpPort.Text = MinPortValue.ToString();
+                else if (port > MaxPortValue)
+                    txtFtpPort.Text = MaxPortValue.ToString();
+            }
+            else
+            {
+                txtFtpPort.Text = MinPortValue.ToString();
             }
         }
 
