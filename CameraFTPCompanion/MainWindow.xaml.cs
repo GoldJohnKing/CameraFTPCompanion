@@ -37,13 +37,14 @@ namespace CameraFTPCompanion
             if (System.IO.File.Exists(configPath))
             {
                 string[] lines = System.IO.File.ReadAllLines(configPath);
-                if (lines.Length >= 5)
+                if (lines.Length >= 6)
                 {
                     txtFolderPath.Text = lines[0];
-                    autoRunExePath.Text = lines[1];
-                    txtFileExtension.Text = lines[2];
-                    chkFtpMode.IsChecked = bool.Parse(lines[3]);
-                    txtFtpPort.Text = lines[4];
+                    chkAutoRun.IsChecked = bool.Parse(lines[1]);
+                    autoRunExePath.Text = lines[2];
+                    txtFileExtension.Text = lines[3];
+                    chkFtpMode.IsChecked = bool.Parse(lines[4]);
+                    txtFtpPort.Text = lines[5];
                 }
             }
         }
@@ -51,7 +52,7 @@ namespace CameraFTPCompanion
         private void SaveConfig()
         {
             string configPath = GetConfigPath();
-            System.IO.File.WriteAllText(configPath, $"{txtFolderPath.Text}\n{autoRunExePath.Text}\n{txtFileExtension.Text}\n{chkFtpMode.IsChecked}\n{txtFtpPort.Text}");
+            System.IO.File.WriteAllText(configPath, $"{txtFolderPath.Text}\n{chkAutoRun.IsChecked ?? false}\n{autoRunExePath.Text}\n{txtFileExtension.Text}\n{chkFtpMode.IsChecked ?? false}\n{txtFtpPort.Text}");
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -70,15 +71,38 @@ namespace CameraFTPCompanion
             }
         }
 
+        private void BtnAutoRunBrowse_Click(object sender, RoutedEventArgs e)
+        {
+            var fileDialog = new OpenFileDialog();
+            fileDialog.Filter = "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*";
+            fileDialog.Title = "选择要自动打开文件的程序";
+            if (fileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                autoRunExePath.Text = fileDialog.FileName;
+            }
+        }
+
         [DllImport("CoreFunctions.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool Start(string folderPath, string fileExtension, bool ftpServerEnabled);
+        public static extern bool Start(string folderPath, bool autoRunEnabled, string execPath, string fileExtension, int ftpPort);
 
         [DllImport("CoreFunctions.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Stop();
 
         private void BtnStart_Click(object sender, RoutedEventArgs e)
         {
-            bool isRunning = Start(txtFolderPath.Text, txtFileExtension.Text, chkFtpMode.IsChecked ?? false);
+            if (string.IsNullOrEmpty(txtFolderPath.Text))
+            {
+                System.Windows.MessageBox.Show("请配置存储路径！");
+                return;
+            }
+
+            if ((!chkAutoRun.IsChecked ?? false) && (!chkFtpMode.IsChecked ?? false))
+            {
+                System.Windows.MessageBox.Show("请至少启用一个功能！");
+                return;
+            }
+
+            bool isRunning = Start(txtFolderPath.Text, (chkAutoRun.IsChecked ?? false), autoRunExePath.Text, txtFileExtension.Text, (chkFtpMode.IsChecked ?? false) ? Int32.Parse(txtFtpPort.Text) : -1);
 
             if (isRunning)
             {

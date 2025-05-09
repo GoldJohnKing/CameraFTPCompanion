@@ -2,6 +2,6 @@
 
 extern "C"
 {
-    bool DLL_EXPORT Start(const wchar_t* folderPath, const wchar_t* fileExtension, const bool ftpServerEnabled);
+    bool DLL_EXPORT Start(const wchar_t* folderPath, const bool execEnabled, const wchar_t* execPath, const wchar_t* fileExtension, const int ftpPort);
     void DLL_EXPORT Stop();
 }

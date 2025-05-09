@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CameraFTPCompanion"
         mc:Ignorable="d"
-        Title="微单相机图传伴侣" Height="320" Width="400" SizeToContent="WidthAndHeight">
+        Title="微单相机图传伴侣" Height="350" Width="400" SizeToContent="WidthAndHeight">
     
     <Grid>
         <StackPanel Margin="10">
@@ -17,17 +17,18 @@
 
             <Rectangle Margin="0,15,0,0" HorizontalAlignment="Stretch" Fill="Gray" Height="1"/>
 
-            <Label Content="自动运行 (留空表示不启用):" Margin="0,5,0,0"/>
+            <CheckBox x:Name="chkAutoRun" Content="启用自动运行" Margin="0,15,0,0"/>
+            <Label Content="打开方式: (留空表示使用系统默认打开方式)" Margin="0,5,0,0"/>
             <StackPanel Orientation="Horizontal">
                 <TextBox x:Name="autoRunExePath" Width="300" Margin="0,0,5,0"/>
-                <Button x:Name="btnAutoRunBrowse" Content="浏览..." Width="75" Click="BtnBrowse_Click"/>
+                <Button x:Name="btnAutoRunBrowse" Content="浏览..." Width="75" Click="BtnAutoRunBrowse_Click"/>
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
                 <Label Content="文件扩展名:"/>
                 <TextBox x:Name="txtFileExtension" Text="jpg" Width="307" VerticalAlignment="Center"/>
             </StackPanel>
-            <Label Content="(不区分大小写，以空格分割多个文件扩展名，如: jpg DNG cr2 RAF)" Margin="0,0,0,0"/>
+            <Label Content="(不区分大小写，以空格分割多个文件扩展名，留空表示任意扩展名)" Margin="0,0,0,0"/>
 
             <Rectangle Margin="0,5,0,0" HorizontalAlignment="Stretch" Fill="Gray" Height="1"/>
 

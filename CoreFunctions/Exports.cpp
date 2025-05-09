@@ -16,11 +16,14 @@ std::atomic<bool> isRunning(false);
 std::vector<std::wstring>extensions;
 std::wstring watchedFolderPath;
 HANDLE watchedFolderHandle = NULL;
+std::wstring autoRunExecPath;
 std::thread monitorThread;
 fineftp::FtpServer* ftp_server;
 
 bool isExtensionMatch(const std::wstring& fileName)
 {
+    if (extensions.empty()) return true; // 如果未给定扩展名，则任意扩展名均有效
+
     std::wstring fileExt = std::filesystem::path(fileName).extension().wstring();
     std::transform(fileExt.begin(), fileExt.end(), fileExt.begin(), ::tolower);
     return std::find(extensions.begin(), extensions.end(), fileExt) != extensions.end();
@@ -108,7 +111,24 @@ void MonitorThreadFunc(HANDLE hDir)
                     isExtensionMatch(fileName) &&
                     isFileReady(fullPath))
                 {
-                    HINSTANCE result = ShellExecuteW(NULL, L"open", fullPath.c_str(), NULL, NULL, SW_SHOW);
+                    if (autoRunExecPath.empty()) // 如果用户未配置打开方式，则使用系统默认的打开方式
+                    {
+                        HINSTANCE result = ShellExecuteW(NULL, L"open", fullPath.c_str(), NULL, NULL, SW_SHOW);
+
+                        if ((INT_PTR)result <= 32) // ShellExecute失败时返回值小于等于32
+                        {
+                            MessageBoxW(NULL, L"使用默认方式打开文件失败！", NULL, NULL);
+                        }
+                    }
+                    else // 否则，使用用户给定的程序打开文件
+                    {
+                        HINSTANCE result = ShellExecuteW(NULL, L"open", autoRunExecPath.c_str(), fullPath.c_str(), NULL, SW_SHOW);
+                        
+                        if ((INT_PTR)result <= 32)
+                        {
+                            MessageBoxW(NULL, L"无法使用指定程序打开文件！", NULL, NULL);
+                        }
+                    }
                 }
 
                 if (!event->NextEntryOffset)
@@ -142,9 +162,9 @@ std::string WideCharToUTF8(const wchar_t* wideStr)
     return utf8Str;
 }
 
-bool StartFtpServer()
+bool StartFtpServer(const int ftpPort)
 {
-    ftp_server = new fineftp::FtpServer(21); // Default listen to "0.0.0.0:21"
+    ftp_server = new fineftp::FtpServer(ftpPort); // Default listen to 0.0.0.0
 
     // Append a '\' to path's end, or fineftp won't handle the path correctly
     std::string ftpRootPath = WideCharToUTF8(watchedFolderPath.c_str());
@@ -163,73 +183,75 @@ bool StartFtpServer()
     return (*ftp_server).start(4);
 }
 
-void StopStpServer()
+void StopFtpServer()
 {
-    (*ftp_server).stop();
-
     if (nullptr != ftp_server)
     {
+        (*ftp_server).stop();
         delete ftp_server;
         ftp_server = nullptr;
     }
 }
 
-bool DLL_EXPORT Start(const wchar_t* folderPath, const wchar_t* fileExtension, const bool ftpServerEnabled)
+bool DLL_EXPORT Start(const wchar_t* folderPath, const bool execEnabled, const wchar_t* execPath, const wchar_t* fileExtension, const int ftpPort)
 {
     if (isRunning) return true; // 监控仍在运行中
 
     if (!std::filesystem::exists(folderPath))
     {
+        MessageBox(NULL, L"存储路径无效！", NULL, NULL);
         return false;
     }
 
-    // 分割扩展名，将其格式化为".ext"格式，并转换为小写
-    std::wistringstream iss(fileExtension);
-    std::wstring ext;
-
-    while (iss >> ext)
+    if (execEnabled)
     {
-        if (ext[0] != L'.')
+        // 分割扩展名，将其格式化为".ext"格式，并转换为小写
+        std::wistringstream iss(fileExtension);
+        std::wstring ext;
+
+        while (iss >> ext)
         {
-            ext = L"." + ext;
+            if (ext[0] != L'.')
+            {
+                ext = L"." + ext;
+            }
+
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+            extensions.push_back(ext);
         }
 
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        // 打开要监控的路径
+        HANDLE watchedFolderHandle = CreateFileW(
+            folderPath,
+            FILE_LIST_DIRECTORY,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
+            NULL
+        );
 
-        extensions.push_back(ext);
+        if (watchedFolderHandle == INVALID_HANDLE_VALUE)
+        {
+            watchedFolderHandle = NULL;
+            MessageBox(NULL, L"无法打开存储路径！", NULL, NULL);
+            return false;
+        }
+
+        watchedFolderPath = folderPath;
+        autoRunExecPath = execPath;
+
+        monitorThread = std::thread(MonitorThreadFunc, watchedFolderHandle);
     }
 
-    if (extensions.empty())
+    if (0 <= ftpPort && 65535 >= ftpPort && !StartFtpServer(ftpPort))
     {
-        return false;
-    }
-
-    // 打开要监控的路径
-    HANDLE watchedFolderHandle = CreateFileW(
-        folderPath,
-        FILE_LIST_DIRECTORY,
-        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-        NULL,
-        OPEN_EXISTING,
-        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
-        NULL
-    );
-
-    if (watchedFolderHandle == INVALID_HANDLE_VALUE)
-    {
-        return false;
+        MessageBox(NULL, L"FTP服务器启动失败", NULL, NULL);
+        StopFtpServer();
     }
 
     isRunning = true;
-    watchedFolderPath = folderPath;
-
-    monitorThread = std::thread(MonitorThreadFunc, watchedFolderHandle);
-
-    if (ftpServerEnabled && !StartFtpServer())
-    {
-        MessageBox(NULL, L"FTP服务器启动失败", NULL, NULL);
-        StopStpServer();
-    }
 
     return true;
 }
@@ -239,11 +261,21 @@ void DLL_EXPORT Stop()
     if (!isRunning) return;
 
     isRunning = false;
+
+    if (monitorThread.joinable())
+    {
+        monitorThread.join();
+    }
+
+    if (NULL != watchedFolderHandle)
+    {
+        CloseHandle(watchedFolderHandle);
+        watchedFolderHandle = NULL;
+    }
+
     watchedFolderPath.clear();
+    autoRunExecPath.clear();
+    extensions.clear();
 
-    monitorThread.join();
-
-    CloseHandle(watchedFolderHandle);
-
-    StopStpServer();
+    StopFtpServer();
 }
