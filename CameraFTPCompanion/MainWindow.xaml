@@ -1,0 +1,53 @@
+﻿<Window x:Class="CameraFTPCompanion.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CameraFTPCompanion"
+        mc:Ignorable="d"
+        Title="微单相机图传伴侣" Height="320" Width="400" SizeToContent="WidthAndHeight">
+    
+    <Grid>
+        <StackPanel Margin="10">
+            <Label Content="存储路径 (必须配置):"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBox x:Name="txtFolderPath" Width="300" Margin="0,0,5,0"/>
+                <Button x:Name="btnBrowse" Content="浏览..." Width="75" Click="BtnBrowse_Click"/>
+            </StackPanel>
+
+            <Rectangle Margin="0,15,0,0" HorizontalAlignment="Stretch" Fill="Gray" Height="1"/>
+
+            <Label Content="自动运行 (留空表示不启用):" Margin="0,5,0,0"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBox x:Name="autoRunExePath" Width="300" Margin="0,0,5,0"/>
+                <Button x:Name="btnAutoRunBrowse" Content="浏览..." Width="75" Click="BtnBrowse_Click"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <Label Content="文件扩展名:"/>
+                <TextBox x:Name="txtFileExtension" Text="jpg" Width="307" VerticalAlignment="Center"/>
+            </StackPanel>
+            <Label Content="(不区分大小写，以空格分割多个文件扩展名，如: jpg DNG cr2 RAF)" Margin="0,0,0,0"/>
+
+            <Rectangle Margin="0,5,0,0" HorizontalAlignment="Stretch" Fill="Gray" Height="1"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <CheckBox x:Name="chkFtpMode" Content="启用内置FTP服务, 端口号: " VerticalAlignment="Center"/>
+                <TextBox x:Name="txtFtpPort" Text="21" Width="50" VerticalAlignment="Center" TextAlignment="Right"/>
+                <Label Content="(有效范围: 0~65535)"/>
+            </StackPanel>
+
+            <Rectangle Margin="0,5,0,0" HorizontalAlignment="Stretch" Fill="Gray" Height="1"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
+                <Button x:Name="btnStart" Content="启动" Width="100" Margin="0,0,10,0" Click="BtnStart_Click" IsEnabled="True"/>
+                <Button x:Name="btnStop" Content="停止" Width="100" Click="BtnStop_Click" IsEnabled="False"/>
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBlock x:Name="txtEmojiStatus" Text="⏸️" Width="32" Height="32" Margin="0,0,5,0" TextAlignment="Center" VerticalAlignment="Center" FontSize="24" Foreground="Blue"/>
+                <TextBlock x:Name="txtStatus" Text="未运行/已停止" VerticalAlignment="Center" FontSize="16"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

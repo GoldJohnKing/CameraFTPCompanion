@@ -1,7 +1,7 @@
-﻿<Application x:Class="PixCakeWindowsCompanion.App"
+﻿<Application x:Class="CameraFTPCompanion.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:PixCakeWindowsCompanion"
+             xmlns:local="clr-namespace:CameraFTPCompanion"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
          

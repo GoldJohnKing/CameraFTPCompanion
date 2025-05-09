@@ -2,7 +2,7 @@
 using System.Data;
 using System.Windows;
 
-namespace PixCakeWindowsCompanion
+namespace CameraFTPCompanion
 {
     /// <summary>
     /// Interaction logic for App.xaml

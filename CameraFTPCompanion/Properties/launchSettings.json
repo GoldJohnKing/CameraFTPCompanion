@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "PixCakeWindowsCompanion": {
+    "CameraFTPCompanion": {
       "commandName": "Project",
       "nativeDebugging": true
     }
