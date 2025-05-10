@@ -17,6 +17,14 @@
 
             <Rectangle Margin="0,15,0,0" HorizontalAlignment="Stretch" Fill="Gray" Height="1"/>
 
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <CheckBox x:Name="chkFtpMode" Content="启用内置FTP服务, 端口号: " VerticalAlignment="Center"/>
+                <TextBox x:Name="txtFtpPort" Text="21" Width="50" VerticalAlignment="Center" TextAlignment="Right"/>
+                <Label Content="(有效范围: 0~65535)"/>
+            </StackPanel>
+
+            <Rectangle Margin="0,5,0,0" HorizontalAlignment="Stretch" Fill="Gray" Height="1"/>
+
             <CheckBox x:Name="chkAutoRun" Content="启用自动运行" Margin="0,15,0,0"/>
             <Label Content="打开方式: (留空表示使用系统默认打开方式)" Margin="0,5,0,0"/>
             <StackPanel Orientation="Horizontal">
@@ -29,14 +37,6 @@
                 <TextBox x:Name="txtFileExtension" Text="jpg" Width="307" VerticalAlignment="Center"/>
             </StackPanel>
             <Label Content="(不区分大小写，以空格分割多个文件扩展名，留空表示任意扩展名)" Margin="0,0,0,0"/>
-
-            <Rectangle Margin="0,5,0,0" HorizontalAlignment="Stretch" Fill="Gray" Height="1"/>
-
-            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                <CheckBox x:Name="chkFtpMode" Content="启用内置FTP服务, 端口号: " VerticalAlignment="Center"/>
-                <TextBox x:Name="txtFtpPort" Text="21" Width="50" VerticalAlignment="Center" TextAlignment="Right"/>
-                <Label Content="(有效范围: 0~65535)"/>
-            </StackPanel>
 
             <Rectangle Margin="0,5,0,0" HorizontalAlignment="Stretch" Fill="Gray" Height="1"/>
 
