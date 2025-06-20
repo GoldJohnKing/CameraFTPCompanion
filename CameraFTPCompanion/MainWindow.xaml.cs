@@ -9,6 +9,8 @@ using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Forms;
+using Microsoft.Win32;
+using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
 
 namespace CameraFTPCompanion
 {
@@ -24,6 +26,17 @@ namespace CameraFTPCompanion
             txtFtpPort.PreviewTextInput += TxtFtpPort_PreviewTextInput;
             txtFtpPort.TextChanged += TxtFtpPort_TextChanged;
             System.Windows.DataObject.AddPastingHandler(txtFtpPort, TxtFtpPort_Pasting);
+            chkAutoStart.Checked += ChkAutoStart_Checked;
+            chkAutoStart.Unchecked += ChkAutoStart_Unchecked;
+            // 检查是否从开机自启启动，如果是则自动运行Start功能
+            string[] args = Environment.GetCommandLineArgs();
+            if (args.Length > 1 && args[1] == "--autostart")
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    BtnStart_Click(null, null);
+                }));
+            }
         }
 
         private string GetConfigPath()
@@ -37,7 +50,7 @@ namespace CameraFTPCompanion
             if (System.IO.File.Exists(configPath))
             {
                 string[] lines = System.IO.File.ReadAllLines(configPath);
-                if (lines.Length >= 6)
+                if (lines.Length >= 7)
                 {
                     txtFolderPath.Text = lines[0];
                     chkAutoRun.IsChecked = bool.Parse(lines[1]);
@@ -45,6 +58,7 @@ namespace CameraFTPCompanion
                     txtFileExtension.Text = lines[3];
                     chkFtpMode.IsChecked = bool.Parse(lines[4]);
                     txtFtpPort.Text = lines[5];
+                    chkAutoStart.IsChecked = bool.Parse(lines[6]);
                 }
             }
         }
@@ -52,7 +66,7 @@ namespace CameraFTPCompanion
         private void SaveConfig()
         {
             string configPath = GetConfigPath();
-            System.IO.File.WriteAllText(configPath, $"{txtFolderPath.Text}\n{chkAutoRun.IsChecked ?? false}\n{autoRunExePath.Text}\n{txtFileExtension.Text}\n{chkFtpMode.IsChecked ?? false}\n{txtFtpPort.Text}");
+            System.IO.File.WriteAllText(configPath, $"{txtFolderPath.Text}\n{chkAutoRun.IsChecked ?? false}\n{autoRunExePath.Text}\n{txtFileExtension.Text}\n{chkFtpMode.IsChecked ?? false}\n{txtFtpPort.Text}\n{chkAutoStart.IsChecked ?? false}");
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -171,6 +185,33 @@ namespace CameraFTPCompanion
             txtStatus.Text = "未运行/已停止";
             btnStart.IsEnabled = true;
             btnStop.IsEnabled = false;
+        }
+
+        private void ChkAutoStart_Checked(object sender, RoutedEventArgs e)
+        {
+            SetAutoStart(true);
+        }
+
+        private void ChkAutoStart_Unchecked(object sender, RoutedEventArgs e)
+        {
+            SetAutoStart(false);
+        }
+
+        private void SetAutoStart(bool enable)
+        {
+            string appName = "CameraFTPCompanion";
+            string appPath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true))
+            {
+                if (enable)
+                {
+                    key.SetValue(appName, $"\"{appPath}\" --autostart");
+                }
+                else
+                {
+                    key.DeleteValue(appName, false);
+                }
+            }
         }
     }
 }
