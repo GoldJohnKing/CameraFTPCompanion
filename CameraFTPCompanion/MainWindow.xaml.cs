@@ -40,6 +40,14 @@ namespace CameraFTPCompanion
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
                     BtnStart_Click(null, null);
+                    if (!_isClosing && chkRunInBackground.IsChecked == true)
+                    {
+                        // 延迟隐藏窗口，确保窗口完全加载后再隐藏
+                        Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            Hide();
+                        }), System.Windows.Threading.DispatcherPriority.Background);
+                    }
                 }));
             }
         }
@@ -81,7 +89,6 @@ namespace CameraFTPCompanion
             {
                 e.Cancel = true;
                 Hide();
-                _notifyIcon.Visible = true;
             }
             else
             {
@@ -218,20 +225,13 @@ namespace CameraFTPCompanion
             _notifyIcon = new NotifyIcon
             {
                 Text = "微单相机图传伴侣",
-                Visible = false
+                Visible = true
             };
 
-            try
+            var iconStream = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/CameraFTPCompanion;component/Resources/icon.ico"))?.Stream;
+            if (iconStream != null)
             {
-                var iconStream = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/CameraFTPCompanion;component/Resources/icon.ico"))?.Stream;
-                if (iconStream != null)
-                {
-                    _notifyIcon.Icon = new Icon(iconStream);
-                }
-            }
-            catch
-            {
-                // 如果无法加载图标，使用默认图标
+                _notifyIcon.Icon = new Icon(iconStream);
             }
 
             _notifyIcon.DoubleClick += (s, args) => ShowWindow();
@@ -254,7 +254,6 @@ namespace CameraFTPCompanion
             Show();
             WindowState = WindowState.Normal;
             Activate();
-            _notifyIcon.Visible = false;
         }
 
         private void SetAutoStart(bool enable)
