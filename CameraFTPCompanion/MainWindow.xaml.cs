@@ -10,7 +10,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Forms;
 using Microsoft.Win32;
-using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
+using System.Drawing;
+using System.ComponentModel;
 
 namespace CameraFTPCompanion
 {
@@ -18,6 +19,9 @@ namespace CameraFTPCompanion
     {
         private const int MinPortValue = 0;
         private const int MaxPortValue = 65535;
+
+        private NotifyIcon _notifyIcon;
+        private bool _isClosing = false;
 
         public MainWindow()
         {
@@ -28,6 +32,7 @@ namespace CameraFTPCompanion
             System.Windows.DataObject.AddPastingHandler(txtFtpPort, TxtFtpPort_Pasting);
             chkAutoStart.Checked += ChkAutoStart_Checked;
             chkAutoStart.Unchecked += ChkAutoStart_Unchecked;
+            InitializeTrayIcon();
             // 检查是否从开机自启启动，如果是则自动运行Start功能
             string[] args = Environment.GetCommandLineArgs();
             if (args.Length > 1 && args[1] == "--autostart")
@@ -50,7 +55,7 @@ namespace CameraFTPCompanion
             if (System.IO.File.Exists(configPath))
             {
                 string[] lines = System.IO.File.ReadAllLines(configPath);
-                if (lines.Length >= 7)
+                if (lines.Length >= 8)
                 {
                     txtFolderPath.Text = lines[0];
                     chkAutoRun.IsChecked = bool.Parse(lines[1]);
@@ -59,6 +64,7 @@ namespace CameraFTPCompanion
                     chkFtpMode.IsChecked = bool.Parse(lines[4]);
                     txtFtpPort.Text = lines[5];
                     chkAutoStart.IsChecked = bool.Parse(lines[6]);
+                    chkRunInBackground.IsChecked = bool.Parse(lines[7]);
                 }
             }
         }
@@ -66,14 +72,24 @@ namespace CameraFTPCompanion
         private void SaveConfig()
         {
             string configPath = GetConfigPath();
-            System.IO.File.WriteAllText(configPath, $"{txtFolderPath.Text}\n{chkAutoRun.IsChecked ?? false}\n{autoRunExePath.Text}\n{txtFileExtension.Text}\n{chkFtpMode.IsChecked ?? false}\n{txtFtpPort.Text}\n{chkAutoStart.IsChecked ?? false}");
+            System.IO.File.WriteAllText(configPath, $"{txtFolderPath.Text}\n{chkAutoRun.IsChecked ?? false}\n{autoRunExePath.Text}\n{txtFileExtension.Text}\n{chkFtpMode.IsChecked ?? false}\n{txtFtpPort.Text}\n{chkAutoStart.IsChecked ?? false}\n{chkRunInBackground.IsChecked ?? false}");
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            Stop();
-            SaveConfig();
-            base.OnClosing(e);
+            if (!_isClosing && chkRunInBackground.IsChecked == true)
+            {
+                e.Cancel = true;
+                Hide();
+                _notifyIcon.Visible = true;
+            }
+            else
+            {
+                Stop();
+                SaveConfig();
+                _notifyIcon?.Dispose();
+                base.OnClosing(e);
+            }
         }
 
         private void BtnBrowse_Click(object sender, RoutedEventArgs e)
@@ -87,7 +103,7 @@ namespace CameraFTPCompanion
 
         private void BtnAutoRunBrowse_Click(object sender, RoutedEventArgs e)
         {
-            var fileDialog = new OpenFileDialog();
+            var fileDialog = new System.Windows.Forms.OpenFileDialog();
             fileDialog.Filter = "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*";
             fileDialog.Title = "选择要自动打开文件的程序";
             if (fileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -195,6 +211,50 @@ namespace CameraFTPCompanion
         private void ChkAutoStart_Unchecked(object sender, RoutedEventArgs e)
         {
             SetAutoStart(false);
+        }
+
+        private void InitializeTrayIcon()
+        {
+            _notifyIcon = new NotifyIcon
+            {
+                Text = "微单相机图传伴侣",
+                Visible = false
+            };
+
+            try
+            {
+                var iconStream = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/CameraFTPCompanion;component/Resources/icon.ico"))?.Stream;
+                if (iconStream != null)
+                {
+                    _notifyIcon.Icon = new Icon(iconStream);
+                }
+            }
+            catch
+            {
+                // 如果无法加载图标，使用默认图标
+            }
+
+            _notifyIcon.DoubleClick += (s, args) => ShowWindow();
+
+            var contextMenu = new ContextMenuStrip();
+            contextMenu.Items.Add("显示", null, (s, e) => ShowWindow());
+            contextMenu.Items.Add("开始", null, (s, e) => BtnStart_Click(null, null));
+            contextMenu.Items.Add("停止", null, (s, e) => BtnStop_Click(null, null));
+            contextMenu.Items.Add("退出", null, (s, e) =>
+            {
+                _isClosing = true;
+                Close();
+            });
+
+            _notifyIcon.ContextMenuStrip = contextMenu;
+        }
+
+        private void ShowWindow()
+        {
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+            _notifyIcon.Visible = false;
         }
 
         private void SetAutoStart(bool enable)
